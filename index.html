@@ -284,7 +284,7 @@ select.input option { background: #0b0d14; color: #fff; }
   font-family: 'Montserrat', sans-serif;
 }
 .poster-price-symbol { font-size: 28px; margin-right: 4px; font-weight: 900; }
-.poster-price-big { font-size: 105px; line-height: 0.8; font-weight: 900; letter-spacing: -3px; }
+.poster-price-big { font-size: 105px; line-height: 0.8; font-weight: 900; letter-spacing:-3px; }
 .poster-price-cents { font-size: 42px; font-weight: 900; margin-left: 2px; }
 
 .bi-container { display: flex; flex-direction: column; gap: 16px; }
@@ -869,7 +869,7 @@ select.input option { background: #0b0d14; color: #fff; }
         <div class="tool-link sub-link" id="btn-sync-fotos" style="color:#38bdf8; font-weight: 800;">🖼️ Sincronizar Fotos Web</div>
       </div>
     </div>
-    <div style="margin-bottom:12px">
+    <div style="margin-bottom:12px" data-perm="notafiscal">
       <div class="accordion-header" id="btn-toggle-nf" style="background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.1)); border-color: rgba(16,185,129,0.3); color: #34d399;">
         <div style="display:flex;align-items:center;gap:12px;"><span>📄</span> NOTA FISCAL CONTROLE</div>
         <span class="chevron">▼</span>
@@ -879,11 +879,11 @@ select.input option { background: #0b0d14; color: #fff; }
         <a href="https://docs.google.com/spreadsheets/d/13O7z3TwdUQPUceZkxsP_Yursjlw3ybAHaPCxbSINj9g/edit?gid=814833385#gid=814833385" target="_blank" class="tool-link sub-link">🟢 Abrir Planilha Externa</a>
       </div>
     </div>
-    <a href="https://script.google.com/macros/s/AKfycbykpJP2ncPdJ9yjn0gbyAsbRB_j8yTclOMMIOBXfGwLmauuGgyn1lpKS4XbxRuAUL90/exec" target="_blank" class="tool-link"><span>🛒</span> Gerador de Ordem de Compra</a>
-    <a href="https://script.google.com/macros/s/AKfycbwGujfCLrrYW1lOKif7KghTY7ltZDrJGyerwg-RCRmhdVo9zvPhF612OK616pG9wdd9/exec" target="_blank" class="tool-link"><span>⚙️</span> Gestão de Controle</a>
-    <div class="tool-link" data-nav="historico" style="border-color:rgba(56,189,248,0.3);color:#38bdf8;"><span>📄</span> Histórico de Relatórios Salvos</div>
-    <div class="tool-link" data-nav="validade" style="border-color:rgba(245,158,11,0.3);color:#fbbf24;"><span>📅</span> Controle de Validades</div>
-    <div class="tool-link" data-nav="cartaz" style="border-color:rgba(236,72,153,0.3);color:#f472b6;"><span>🏷️</span> Gerador de Cartaz de Promoção</div>
+    <a href="https://script.google.com/macros/s/AKfycbykpJP2ncPdJ9yjn0gbyAsbRB_j8yTclOMMIOBXfGwLmauuGgyn1lpKS4XbxRuAUL90/exec" target="_blank" class="tool-link" data-perm="ordemcompra"><span>🛒</span> Gerador de Ordem de Compra</a>
+    <a href="https://script.google.com/macros/s/AKfycbwGujfCLrrYW1lOKif7KghTY7ltZDrJGyerwg-RCRmhdVo9zvPhF612OK616pG9wdd9/exec" target="_blank" class="tool-link" data-perm="gestao"><span>⚙️</span> Gestão de Controle</a>
+    <div class="tool-link" data-nav="historico" data-perm="relatorio" style="border-color:rgba(56,189,248,0.3);color:#38bdf8;"><span>📄</span> Histórico de Relatórios Salvos</div>
+    <div class="tool-link" data-nav="validade" data-perm="validade" style="border-color:rgba(245,158,11,0.3);color:#fbbf24;"><span>📅</span> Controle de Validades</div>
+    <div class="tool-link" data-nav="cartaz" data-perm="cartaz" style="border-color:rgba(236,72,153,0.3);color:#f472b6;"><span>🏷️</span> Gerador de Cartaz de Promoção</div>
     <div class="tool-link" id="btn-logout" style="margin-top:auto;border-color:rgba(239,68,68,0.3);color:#f87171;cursor:pointer"><span>🚪</span> Sair da Conta</div>
   </div>
 </div>
@@ -916,13 +916,11 @@ var rawBiData = null;
 var html5QrCodeLive = null;
 var zoomAtual = 1;
 
-// HELPER SEGURO DE EVENTOS
 function safeAddEvent(id, evt, fn) {
   var el = document.getElementById(id);
   if (el) el.addEventListener(evt, fn);
 }
 
-// UTILS GLOBAIS
 window.toast = function(t, tipo) {
   var el = document.getElementById('toast');
   if (!el) return;
@@ -930,6 +928,30 @@ window.toast = function(t, tipo) {
   el.className = 'toast t-' + tipo;
   el.classList.add('show');
   setTimeout(function(){ el.classList.remove('show'); }, 3500);
+};
+
+window.atualizarVisibilidadeMenu = function() {
+  document.querySelectorAll('.menu-btn').forEach(function(b){ b.style.display = 'none'; });
+  document.querySelectorAll('[data-perm]').forEach(function(el){ el.style.display = 'none'; });
+
+  if (usuarioLogado && usuarioLogado.permissoes) {
+    usuarioLogado.permissoes.forEach(function(p){
+      var btnModulo = document.querySelector('.menu-btn[data-nav="' + p + '"]');
+      if(btnModulo) btnModulo.style.display = 'flex';
+
+      document.querySelectorAll('[data-perm="' + p + '"]').forEach(function(el){
+        el.style.display = 'flex';
+      });
+    });
+  }
+
+  if (usuarioLogado) {
+    var isAdm = (usuarioLogado.funcao && usuarioLogado.funcao.toLowerCase().indexOf('gerente') !== -1 || 
+                 usuarioLogado.funcao && usuarioLogado.funcao.toLowerCase().indexOf('administrador') !== -1 || 
+                 (usuarioLogado.permissoes && usuarioLogado.permissoes.indexOf('admin') !== -1) || 
+                 (usuarioLogado.usuario && usuarioLogado.usuario.toLowerCase() === 'admin'));
+    document.getElementById('admin-section').style.display = isAdm ? 'block' : 'none';
+  }
 };
 
 window.nav = function(page){
@@ -967,9 +989,7 @@ window.gerarCodigoAleatorio = function(prefixo) {
   return letra + num;
 };
 
-// ============================================
-// SCANNER AO VIVO COM FALLBACK (CELULAR/PC)
-// ============================================
+// SCANNER AO VIVO
 window.abrirScannerAoVivo = function(targetInputId, callbackOnScan) {
   activeTargetInputId = targetInputId;
   activeScanCallback = callbackOnScan;
@@ -1055,7 +1075,6 @@ window.pararScannerAoVivo = function() {
   }
 };
 
-// INICIALIZAÇÃO DE BINDINGS
 document.addEventListener('DOMContentLoaded', function() {
 
   document.querySelectorAll('[data-nav]').forEach(function(btn){
@@ -1080,7 +1099,7 @@ document.addEventListener('DOMContentLoaded', function() {
       btn.disabled = false;
       btn.textContent = 'ENTRAR';
       window.toast('Servidor demorou a responder. Clique em ENTRAR novamente.', 'er');
-    },31000);
+    }, 29000);
 
     google.script.run
       .withSuccessHandler(function(res){
@@ -1094,19 +1113,7 @@ document.addEventListener('DOMContentLoaded', function() {
           document.getElementById('user-greet').textContent = 'Olá, ' + primeiroNome + '!';
           document.getElementById('resp').value = usuarioLogado.nome || '';
           
-          document.querySelectorAll('.menu-btn').forEach(function(b){ b.style.display = 'none'; });
-          if (usuarioLogado.permissoes) {
-            usuarioLogado.permissoes.forEach(function(p){
-              var btnModulo = document.querySelector('.menu-btn[data-nav="' + p + '"]');
-              if(btnModulo) btnModulo.style.display = 'flex';
-            });
-          }
-
-          var isAdm = (usuarioLogado.funcao && usuarioLogado.funcao.toLowerCase().indexOf('gerente') !== -1 || 
-                       usuarioLogado.funcao && usuarioLogado.funcao.toLowerCase().indexOf('administrador') !== -1 || 
-                       (usuarioLogado.permissoes && usuarioLogado.permissoes.indexOf('admin') !== -1) || 
-                       (usuarioLogado.usuario && usuarioLogado.usuario.toLowerCase() === 'admin'));
-          document.getElementById('admin-section').style.display = isAdm ? 'block' : 'none';
+          window.atualizarVisibilidadeMenu();
           window.toast('Login efetuado com sucesso!', 'ok'); 
           window.nav('home');
         } else { 
@@ -1212,11 +1219,68 @@ document.addEventListener('DOMContentLoaded', function() {
   safeAddEvent('cartaz-prod-name', 'input', window.atualizarPreviewCartaz);
   safeAddEvent('cartaz-prod-price', 'input', window.atualizarPreviewCartaz);
 
-  // VALIDADES FILTROS
+  // VALIDADES FILTROS E SALVAMENTO PRINCIPAL
   safeAddEvent('val-search-input', 'input', window.debounce(function() { window.popularSelectValidades(); }, 300));
   safeAddEvent('val-filter-cat', 'change', function() { window.popularSelectValidades(); });
 
-  // BINDING SALVAR PERMISSÕES DO USUÁRIO (CORRIGIDO: ENVIA ARRAY)
+  safeAddEvent('btn-save-validade', 'click', function() {
+    var idProd = document.getElementById('val-select-prod').value;
+    var dtVenc = document.getElementById('val-dt-venc').value;
+    var qtd = document.getElementById('val-qtd').value;
+    var lote = document.getElementById('val-lote').value;
+
+    if (!idProd) { window.toast('Selecione um produto!', 'er'); return; }
+    if (!dtVenc) { window.toast('Informe a data de vencimento!', 'er'); return; }
+
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+
+    google.script.run.withSuccessHandler(function(res) {
+      btn.disabled = false;
+      btn.textContent = 'Salvar Validade';
+      window.toast(res ? res.mensagem : 'Validade salva com sucesso!', res && res.sucesso ? 'ok' : 'er');
+      if (res && res.sucesso) {
+        document.getElementById('val-dt-venc').value = '';
+        document.getElementById('val-lote').value = '';
+        window.carregarValidades();
+      }
+    }).withFailureHandler(function() {
+      btn.disabled = false;
+      btn.textContent = 'Salvar Validade';
+      window.toast('Erro ao salvar validade.', 'er');
+    }).salvarValidade({ idProduto: idProd, dataVenc: dtVenc, quantidade: qtd, lote: lote, usuario: usuarioLogado ? usuarioLogado.nome : '' });
+  });
+
+  // SALVAMENTO DA VALIDADE RÁPIDA (MODAL NA TELA DE CONTAGEM)
+  safeAddEvent('btn-save-qv', 'click', function() {
+    var idProd = document.getElementById('qv-prod-id').value;
+    var dtVenc = document.getElementById('qv-dt-venc').value;
+    var qtd = document.getElementById('qv-qtd').value;
+    var lote = document.getElementById('qv-lote').value;
+
+    if (!dtVenc) { window.toast('Informe a data de vencimento!', 'er'); return; }
+
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+
+    google.script.run.withSuccessHandler(function(res) {
+      btn.disabled = false;
+      btn.textContent = 'Confirmar Validade';
+      window.toast(res ? res.mensagem : 'Validade salva com sucesso!', res && res.sucesso ? 'ok' : 'er');
+      if (res && res.sucesso) {
+        document.getElementById('modal-quick-validade').style.display = 'none';
+        window.carregarContagem();
+      }
+    }).withFailureHandler(function() {
+      btn.disabled = false;
+      btn.textContent = 'Confirmar Validade';
+      window.toast('Erro ao salvar validade.', 'er');
+    }).salvarValidade({ idProduto: idProd, dataVenc: dtVenc, quantidade: qtd, lote: lote, usuario: usuarioLogado ? usuarioLogado.nome : '' });
+  });
+
+  // SALVAR PERMISSÕES DO USUÁRIO
   safeAddEvent('btn-save-prof-perms', 'click', function() {
     var userId = document.getElementById('prof-user-id').value;
     if (!userId) { window.toast('Usuário não selecionado!', 'er'); return; }
@@ -1465,10 +1529,23 @@ window.carregarContagem = function() {
   document.getElementById('load-contagem').style.display = 'block';
   document.getElementById('lista-contagem').innerHTML = '';
   limiteExibicao = 50;
-  google.script.run.withSuccessHandler(function(dados) {
-      produtosContagem = dados || []; document.getElementById('load-contagem').style.display = 'none';
-      window.popularFiltroCategorias(produtosContagem); window.renderContagem();
-    }).withFailureHandler(function(err) { document.getElementById('load-contagem').style.display = 'none'; window.toast('Erro ao carregar cache.', 'er'); }).getProdutos();
+  
+  google.script.run.withSuccessHandler(function(prods) {
+    produtosContagem = prods || [];
+    google.script.run.withSuccessHandler(function(vencs) {
+      validadesData = vencs || [];
+      document.getElementById('load-contagem').style.display = 'none';
+      window.popularFiltroCategorias(produtosContagem);
+      window.renderContagem();
+    }).withFailureHandler(function() {
+      document.getElementById('load-contagem').style.display = 'none';
+      window.popularFiltroCategorias(produtosContagem);
+      window.renderContagem();
+    }).getValidades();
+  }).withFailureHandler(function(err) { 
+    document.getElementById('load-contagem').style.display = 'none'; 
+    window.toast('Erro ao carregar cache.', 'er'); 
+  }).getProdutos();
 };
 
 window.popularFiltroCategorias = function(prods) {
@@ -1488,6 +1565,16 @@ window.gerarMetaHtml = function(p, qtd) {
     if (cb.length >= 4) { metaHtml += ' | Cód: ' + cb.slice(0, -4) + '<span class="barcode-highlight">' + cb.slice(-4) + '</span>'; } else { metaHtml += ' | Cód: <span class="barcode-highlight">' + cb + '</span>'; }
   }
   metaHtml += ' | Ideal: ' + ideal;
+  
+  // EXIBIR DATA DE VENCIMENTO DO ITEM
+  var valMatch = validadesData.find(function(v) {
+    return String(v.idProduto || v.id || '').trim() === String(p.id).trim() || 
+           (v.nome && p.nome && String(v.nome).trim().toLowerCase() === String(p.nome).trim().toLowerCase());
+  });
+  if (valMatch && valMatch.dataVenc) {
+    metaHtml += ' | <span style="color:#fbbf24;font-weight:800;">📅 Venc: ' + valMatch.dataVenc + '</span>';
+  }
+
   if (contagensAtuais[p.id] !== undefined && contagensAtuais[p.id] > 0) {
     var diff = qtd - ideal;
     if (diff > 0) metaHtml += ' <span style="color:#fbbf24;font-weight:800;margin-left:4px">+' + diff + '</span>';
