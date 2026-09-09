@@ -1227,7 +1227,7 @@ document.addEventListener('DOMContentLoaded', function() {
   safeAddEvent('cartaz-prod-name', 'input', window.atualizarPreviewCartaz);
   safeAddEvent('cartaz-prod-price', 'input', window.atualizarPreviewCartaz);
 
-  // IMPRESSÃO DE RELATÓRIO
+// IMPRESSÃO DE RELATÓRIO COM ASSINATURA DE TURNOS
   safeAddEvent('btn-print-relatorio', 'click', function() {
     var modalContent = document.querySelector('#modal-relatorio .modal-cam-content');
     if (!modalContent) return;
@@ -1255,6 +1255,19 @@ document.addEventListener('DOMContentLoaded', function() {
     janela.document.write('@media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }');
     janela.document.write('</style></head><body>');
     janela.document.write(conteudo);
+    
+    // Rodapé de Assinaturas dos Turnos
+    janela.document.write('<div style="margin-top: 45px; font-size: 12px; font-weight: bold;">');
+    janela.document.write('  <div style="display:flex; justify-content:space-between; margin-bottom: 25px;">');
+    janela.document.write('    <span style="flex:1;">Responsável pelo Turno Atual......: _____________________________________</span>');
+    janela.document.write('    <span style="width: 220px; text-align:right;">Visto: ___________________</span>');
+    janela.document.write('  </div>');
+    janela.document.write('  <div style="display:flex; justify-content:space-between;">');
+    janela.document.write('    <span style="flex:1;">Responsável pelo Turno Seguinte: _____________________________________</span>');
+    janela.document.write('    <span style="width: 220px; text-align:right;">Visto: ___________________</span>');
+    janela.document.write('  </div>');
+    janela.document.write('</div>');
+    
     janela.document.write('</body></html>');
     janela.document.close();
     janela.focus();
