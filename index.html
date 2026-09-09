@@ -1080,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', function() {
       btn.disabled = false;
       btn.textContent = 'ENTRAR';
       window.toast('Servidor demorou a responder. Clique em ENTRAR novamente.', 'er');
-    }, 30000);
+    },31000);
 
     google.script.run
       .withSuccessHandler(function(res){
@@ -1216,7 +1216,7 @@ document.addEventListener('DOMContentLoaded', function() {
   safeAddEvent('val-search-input', 'input', window.debounce(function() { window.popularSelectValidades(); }, 300));
   safeAddEvent('val-filter-cat', 'change', function() { window.popularSelectValidades(); });
 
-  // BINDING SALVAR PERMISSÕES DO USUÁRIO
+  // BINDING SALVAR PERMISSÕES DO USUÁRIO (CORRIGIDO: ENVIA ARRAY)
   safeAddEvent('btn-save-prof-perms', 'click', function() {
     var userId = document.getElementById('prof-user-id').value;
     if (!userId) { window.toast('Usuário não selecionado!', 'er'); return; }
@@ -1249,7 +1249,7 @@ document.addEventListener('DOMContentLoaded', function() {
         btn.textContent = 'Salvar Alterações de Permissões';
         window.toast('Erro ao salvar permissões.', 'er');
       })
-      .salvarPermissoesUsuario(userId, perms.join(','), usuarioLogado ? usuarioLogado.usuario : '');
+      .salvarPermissoesUsuario(userId, perms, usuarioLogado ? usuarioLogado.usuario : '');
   });
 
   // IMPRESSÃO DE RELATÓRIO
