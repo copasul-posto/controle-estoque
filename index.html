@@ -284,7 +284,7 @@ select.input option { background: #0b0d14; color: #fff; }
   font-family: 'Montserrat', sans-serif;
 }
 .poster-price-symbol { font-size: 28px; margin-right: 4px; font-weight: 900; }
-.poster-price-big { font-size: 105px; line-height: 0.8; font-weight: 900; letter-spacing:-3px; }
+.poster-price-big { font-size: 105px; line-height: 0.8; font-weight: 900; letter-spacing: -3px; }
 .poster-price-cents { font-size: 42px; font-weight: 900; margin-left: 2px; }
 
 .bi-container { display: flex; flex-direction: column; gap: 16px; }
@@ -921,6 +921,14 @@ function safeAddEvent(id, evt, fn) {
   if (el) el.addEventListener(evt, fn);
 }
 
+function formatarDataBR(dataIso) {
+  if (!dataIso) return '';
+  if (dataIso.indexOf('/') > -1) return dataIso;
+  var p = dataIso.split('-');
+  if (p.length === 3) return p[2] + '/' + p[1] + '/' + p[0];
+  return dataIso;
+}
+
 window.toast = function(t, tipo) {
   var el = document.getElementById('toast');
   if (!el) return;
@@ -1099,7 +1107,7 @@ document.addEventListener('DOMContentLoaded', function() {
       btn.disabled = false;
       btn.textContent = 'ENTRAR';
       window.toast('Servidor demorou a responder. Clique em ENTRAR novamente.', 'er');
-    }, 31000);
+    }, 30000);
 
     google.script.run
       .withSuccessHandler(function(res){
@@ -1225,7 +1233,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
   safeAddEvent('btn-save-validade', 'click', function() {
     var idProd = document.getElementById('val-select-prod').value;
-    var dtVenc = document.getElementById('val-dt-venc').value;
+    var dtVencRaw = document.getElementById('val-dt-venc').value;
+    var dtVenc = formatarDataBR(dtVencRaw);
     var qtd = document.getElementById('val-qtd').value;
     var lote = document.getElementById('val-lote').value;
 
@@ -1236,26 +1245,28 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.disabled = true;
     btn.textContent = 'Salvando...';
 
+    var prodObj = produtosContagem.find(function(p){ return String(p.id) === String(idProd); });
+    var nomeProd = prodObj ? prodObj.nome : '';
+
     google.script.run.withSuccessHandler(function(res) {
       btn.disabled = false;
       btn.textContent = 'Salvar Validade';
-      window.toast(res ? res.mensagem : 'Validade salva com sucesso!', res && res.sucesso ? 'ok' : 'er');
-      if (res && res.sucesso) {
-        document.getElementById('val-dt-venc').value = '';
-        document.getElementById('val-lote').value = '';
-        window.carregarValidades();
-      }
-    }).withFailureHandler(function() {
+      window.toast(res ? res.mensagem : 'Validade salva com sucesso!', (res && res.sucesso !== false) ? 'ok' : 'er');
+      document.getElementById('val-dt-venc').value = '';
+      document.getElementById('val-lote').value = '';
+      window.carregarValidades();
+    }).withFailureHandler(function(err) {
       btn.disabled = false;
       btn.textContent = 'Salvar Validade';
       window.toast('Erro ao salvar validade.', 'er');
-    }).salvarValidade({ idProduto: idProd, dataVenc: dtVenc, quantidade: qtd, lote: lote, usuario: usuarioLogado ? usuarioLogado.nome : '' });
+    }).salvarValidade({ idProduto: idProd, nome: nomeProd, dataVenc: dtVenc, quantidade: qtd, lote: lote, usuario: usuarioLogado ? usuarioLogado.nome : '' });
   });
 
   // SALVAMENTO DA VALIDADE RÁPIDA (MODAL NA TELA DE CONTAGEM)
   safeAddEvent('btn-save-qv', 'click', function() {
     var idProd = document.getElementById('qv-prod-id').value;
-    var dtVenc = document.getElementById('qv-dt-venc').value;
+    var dtVencRaw = document.getElementById('qv-dt-venc').value;
+    var dtVenc = formatarDataBR(dtVencRaw);
     var qtd = document.getElementById('qv-qtd').value;
     var lote = document.getElementById('qv-lote').value;
 
@@ -1265,19 +1276,20 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.disabled = true;
     btn.textContent = 'Salvando...';
 
+    var prodObj = produtosContagem.find(function(p){ return String(p.id) === String(idProd); });
+    var nomeProd = prodObj ? prodObj.nome : '';
+
     google.script.run.withSuccessHandler(function(res) {
       btn.disabled = false;
       btn.textContent = 'Confirmar Validade';
-      window.toast(res ? res.mensagem : 'Validade salva com sucesso!', res && res.sucesso ? 'ok' : 'er');
-      if (res && res.sucesso) {
-        document.getElementById('modal-quick-validade').style.display = 'none';
-        window.carregarContagem();
-      }
-    }).withFailureHandler(function() {
+      window.toast(res ? res.mensagem : 'Validade salva com sucesso!', (res && res.sucesso !== false) ? 'ok' : 'er');
+      document.getElementById('modal-quick-validade').style.display = 'none';
+      window.carregarContagem();
+    }).withFailureHandler(function(err) {
       btn.disabled = false;
       btn.textContent = 'Confirmar Validade';
       window.toast('Erro ao salvar validade.', 'er');
-    }).salvarValidade({ idProduto: idProd, dataVenc: dtVenc, quantidade: qtd, lote: lote, usuario: usuarioLogado ? usuarioLogado.nome : '' });
+    }).salvarValidade({ idProduto: idProd, nome: nomeProd, dataVenc: dtVenc, quantidade: qtd, lote: lote, usuario: usuarioLogado ? usuarioLogado.nome : '' });
   });
 
   // SALVAR PERMISSÕES DO USUÁRIO
@@ -1526,26 +1538,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // FUNCTIONS CONTAGEM, CADASTRO, ADM E BI
 window.carregarContagem = function() {
-  document.getElementById('load-contagem').style.display = 'block';
+  var loadEl = document.getElementById('load-contagem');
+  if (loadEl) loadEl.style.display = 'block';
   document.getElementById('lista-contagem').innerHTML = '';
   limiteExibicao = 50;
-  
-  google.script.run.withSuccessHandler(function(prods) {
-    produtosContagem = prods || [];
-    google.script.run.withSuccessHandler(function(vencs) {
-      validadesData = vencs || [];
-      document.getElementById('load-contagem').style.display = 'none';
+
+  // 1. Carrega produtos imediatamente sem travar a tela
+  google.script.run
+    .withSuccessHandler(function(prods) {
+      produtosContagem = prods || [];
+      if (loadEl) loadEl.style.display = 'none';
       window.popularFiltroCategorias(produtosContagem);
       window.renderContagem();
-    }).withFailureHandler(function() {
-      document.getElementById('load-contagem').style.display = 'none';
-      window.popularFiltroCategorias(produtosContagem);
-      window.renderContagem();
-    }).getValidades();
-  }).withFailureHandler(function(err) { 
-    document.getElementById('load-contagem').style.display = 'none'; 
-    window.toast('Erro ao carregar cache.', 'er'); 
-  }).getProdutos();
+
+      // 2. Busca as validades em segundo plano
+      google.script.run
+        .withSuccessHandler(function(vencs) {
+          validadesData = vencs || [];
+          window.renderContagem(); // Atualiza exibição com as datas de vencimento
+        })
+        .withFailureHandler(function(err) {
+          console.warn("Falha ao buscar validades em segundo plano:", err);
+        })
+        .getValidades();
+    })
+    .withFailureHandler(function(err) {
+      if (loadEl) loadEl.style.display = 'none';
+      window.toast('Erro ao carregar produtos. Tente novamente.', 'er');
+    })
+    .getProdutos();
 };
 
 window.popularFiltroCategorias = function(prods) {
@@ -1567,9 +1588,13 @@ window.gerarMetaHtml = function(p, qtd) {
   metaHtml += ' | Ideal: ' + ideal;
   
   // EXIBIR DATA DE VENCIMENTO DO ITEM
-  var valMatch = validadesData.find(function(v) {
-    return String(v.idProduto || v.id || '').trim() === String(p.id).trim() || 
-           (v.nome && p.nome && String(v.nome).trim().toLowerCase() === String(p.nome).trim().toLowerCase());
+  var valMatch = (validadesData || []).find(function(v) {
+    if (!v) return false;
+    var vId = String(v.idProduto || v.id || '').trim();
+    var pId = String(p.id).trim();
+    var vNome = String(v.nome || v.produto || '').trim().toLowerCase();
+    var pNome = String(p.nome || '').trim().toLowerCase();
+    return (vId && vId === pId) || (vNome && pNome && vNome === pNome);
   });
   if (valMatch && valMatch.dataVenc) {
     metaHtml += ' | <span style="color:#fbbf24;font-weight:800;">📅 Venc: ' + valMatch.dataVenc + '</span>';
