@@ -929,6 +929,10 @@ function formatarDataBR(dataIso) {
   return dataIso;
 }
 
+function norm(val) {
+  return String(val || '').trim().toLowerCase().replace(/^0+/, '');
+}
+
 window.toast = function(t, tipo) {
   var el = document.getElementById('toast');
   if (!el) return;
@@ -1107,7 +1111,7 @@ document.addEventListener('DOMContentLoaded', function() {
       btn.disabled = false;
       btn.textContent = 'ENTRAR';
       window.toast('Servidor demorou a responder. Clique em ENTRAR novamente.', 'er');
-    }, 30000);
+    }, 35000);
 
     google.script.run
       .withSuccessHandler(function(res){
@@ -1227,7 +1231,38 @@ document.addEventListener('DOMContentLoaded', function() {
   safeAddEvent('cartaz-prod-name', 'input', window.atualizarPreviewCartaz);
   safeAddEvent('cartaz-prod-price', 'input', window.atualizarPreviewCartaz);
 
-  // VALIDADES FILTROS E SALVAMENTO PRINCIPAL
+  // BOTÕES DE ATUALIZAÇÃO DE CACHE (COM PROTECTION CONTRA TRAVAMENTO)
+  safeAddEvent('btn-cache-contagem', 'click', function() {
+    var btn = this; btn.disabled = true; btn.textContent = '🔄 Atualizando...';
+    google.script.run
+      .withSuccessHandler(function(res) { 
+        btn.disabled = false; btn.textContent = '🔄 Atualizar Cache'; 
+        window.toast(res ? res.mensagem : 'Cache atualizado!', (res && res.sucesso !== false) ? 'ok' : 'er'); 
+        if (!res || res.sucesso !== false) window.carregarContagem(); 
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false; btn.textContent = '🔄 Atualizar Cache';
+        window.toast('Erro ao comunicar com o servidor de cache.', 'er');
+      })
+      .atualizarCache();
+  });
+
+  safeAddEvent('btn-cache-cadastrar', 'click', function() {
+    var btn = this; btn.disabled = true; btn.textContent = '🔄 Atualizando...';
+    google.script.run
+      .withSuccessHandler(function(res) { 
+        btn.disabled = false; btn.textContent = '🔄 Atualizar Cache'; 
+        window.toast(res ? res.mensagem : 'Cache atualizado!', (res && res.sucesso !== false) ? 'ok' : 'er'); 
+        if (!res || res.sucesso !== false) window.carregarProdutos(); 
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false; btn.textContent = '🔄 Atualizar Cache';
+        window.toast('Erro ao comunicar com o servidor de cache.', 'er');
+      })
+      .atualizarCache();
+  });
+
+  // VALIDADES FILTROS E SALVAMENTO PRINCIPAL (PAYLOAD COMPLETO MULTI-CAMPO)
   safeAddEvent('val-search-input', 'input', window.debounce(function() { window.popularSelectValidades(); }, 300));
   safeAddEvent('val-filter-cat', 'change', function() { window.popularSelectValidades(); });
 
@@ -1245,8 +1280,24 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.disabled = true;
     btn.textContent = 'Salvando...';
 
-    var prodObj = produtosContagem.find(function(p){ return String(p.id).trim() === String(idProd).trim(); });
+    var prodObj = produtosContagem.find(function(p){ return norm(p.id) === norm(idProd); });
     var nomeProd = prodObj ? prodObj.nome : '';
+
+    var payload = {
+      id: String(idProd).trim(),
+      idProduto: String(idProd).trim(),
+      produtoId: String(idProd).trim(),
+      nome: nomeProd,
+      nomeProduto: nomeProd,
+      codBarra: prodObj ? String(prodObj.codBarra || '').trim() : '',
+      dataVenc: dtVenc,
+      dataVencimento: dtVenc,
+      quantidade: Number(qtd) || 1,
+      qtd: Number(qtd) || 1,
+      lote: lote || '',
+      usuario: usuarioLogado ? usuarioLogado.nome : '',
+      responsavel: usuarioLogado ? usuarioLogado.nome : ''
+    };
 
     google.script.run.withSuccessHandler(function(res) {
       btn.disabled = false;
@@ -1263,16 +1314,7 @@ document.addEventListener('DOMContentLoaded', function() {
       btn.disabled = false;
       btn.textContent = 'Salvar Validade';
       window.toast('Erro ao salvar validade.', 'er');
-    }).salvarValidade({
-      id: idProd,
-      idProduto: String(idProd).trim(),
-      nome: nomeProd,
-      codBarra: prodObj ? prodObj.codBarra : '',
-      dataVenc: dtVenc,
-      quantidade: qtd,
-      lote: lote,
-      usuario: usuarioLogado ? usuarioLogado.nome : ''
-    });
+    }).salvarValidade(payload);
   });
 
   // SALVAMENTO DA VALIDADE RÁPIDA (MODAL NA TELA DE CONTAGEM)
@@ -1289,8 +1331,24 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.disabled = true;
     btn.textContent = 'Salvando...';
 
-    var prodObj = produtosContagem.find(function(p){ return String(p.id).trim() === String(idProd).trim(); });
+    var prodObj = produtosContagem.find(function(p){ return norm(p.id) === norm(idProd); });
     var nomeProd = prodObj ? prodObj.nome : document.getElementById('qv-prod-nome').textContent;
+
+    var payload = {
+      id: String(idProd).trim(),
+      idProduto: String(idProd).trim(),
+      produtoId: String(idProd).trim(),
+      nome: nomeProd,
+      nomeProduto: nomeProd,
+      codBarra: prodObj ? String(prodObj.codBarra || '').trim() : '',
+      dataVenc: dtVenc,
+      dataVencimento: dtVenc,
+      quantidade: Number(qtd) || 1,
+      qtd: Number(qtd) || 1,
+      lote: lote || '',
+      usuario: usuarioLogado ? usuarioLogado.nome : '',
+      responsavel: usuarioLogado ? usuarioLogado.nome : ''
+    };
 
     google.script.run.withSuccessHandler(function(res) {
       btn.disabled = false;
@@ -1306,16 +1364,7 @@ document.addEventListener('DOMContentLoaded', function() {
       btn.disabled = false;
       btn.textContent = 'Confirmar Validade';
       window.toast('Erro ao salvar validade.', 'er');
-    }).salvarValidade({
-      id: idProd,
-      idProduto: String(idProd).trim(),
-      nome: nomeProd,
-      codBarra: prodObj ? prodObj.codBarra : '',
-      dataVenc: dtVenc,
-      quantidade: qtd,
-      lote: lote,
-      usuario: usuarioLogado ? usuarioLogado.nome : ''
-    });
+    }).salvarValidade(payload);
   });
 
   // SALVAR PERMISSÕES DO USUÁRIO
@@ -1423,10 +1472,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   safeAddEvent('search-input', 'input', function(){ limiteExibicao = 50; window.renderContagem(); });
   safeAddEvent('filter-cat', 'change', function(){ limiteExibicao = 50; window.renderContagem(); });
-  safeAddEvent('btn-cache-contagem', 'click', function() {
-    var btn = this; btn.disabled = true; btn.textContent = '🔄 Atualizando...';
-    google.script.run.withSuccessHandler(function(res) { btn.disabled = false; btn.textContent = '🔄 Atualizar Cache'; window.toast(res.mensagem, res.sucesso ? 'ok' : 'er'); if (res.sucesso) window.carregarContagem(); }).atualizarCache();
-  });
 
   safeAddEvent('btn-save-cont', 'click', function() {
     var resp = document.getElementById('resp').value.trim();
@@ -1582,13 +1627,13 @@ window.carregarContagem = function() {
           window.renderContagem();
         })
         .withFailureHandler(function(err) {
-          console.warn("Falha ao buscar validades em segundo plano:", err);
+          console.warn("Falha ao carregar validades em segundo plano:", err);
         })
         .getValidades();
     })
     .withFailureHandler(function(err) {
       if (loadEl) loadEl.style.display = 'none';
-      window.toast('Erro ao carregar produtos. Tente novamente.', 'er');
+      window.toast('Erro ao carregar produtos do servidor.', 'er');
     })
     .getProdutos();
 };
@@ -1613,11 +1658,16 @@ window.gerarMetaHtml = function(p, qtd) {
   
   var valMatch = (validadesData || []).find(function(v) {
     if (!v) return false;
-    var vId = String(v.idProduto || v.id || '').trim();
-    var pId = String(p.id).trim();
-    var vNome = String(v.nome || v.produto || '').trim().toLowerCase();
-    var pNome = String(p.nome || '').trim().toLowerCase();
-    return (vId && vId === pId) || (vNome && pNome && vNome === pNome);
+    var vId = norm(v.idProduto || v.id || v.produtoId);
+    var pId = norm(p.id);
+    var vNome = norm(v.nome || v.produto || v.nomeProduto);
+    var pNome = norm(p.nome);
+    var vCod = norm(v.codBarra || v.codigoBarras);
+    var pCod = norm(p.codBarra);
+
+    return (vId && pId && vId === pId) ||
+           (vCod && pCod && vCod === pCod) ||
+           (vNome && pNome && vNome === pNome);
   });
   if (valMatch && valMatch.dataVenc) {
     metaHtml += ' | <span style="color:#fbbf24;font-weight:800;">📅 Venc: ' + valMatch.dataVenc + '</span>';
@@ -2135,7 +2185,7 @@ window.popularSelectCartaz = function() {
     var categorias = new Set();
     produtosContagem.forEach(function(p) { if (p.categoria) categorias.add(p.categoria.toUpperCase()); });
     var cHtml = '<option value="TODAS">Todas as Categorias</option>';
-    categorias.forEach(function(cat) { html += '<option value="' + cat + '">' + cat + '</option>'; });
+    categorias.forEach(function(cat) { cHtml += '<option value="' + cat + '">' + cat + '</option>'; });
     selCat.innerHTML = cHtml;
     selCat.value = catFiltro;
   }
@@ -2402,7 +2452,7 @@ window.processarERenderizarBI = function() {
   document.getElementById('bi-kpi-acuracia').textContent = (filtrados.length > 0 ? Math.round((totOk / filtrados.length) * 100) : 100) + '%';
   
   if (chartTrendInstance) chartTrendInstance.destroy(); 
-  chartTrendInstance = new Chart(document.getElementById('chart-trend').getContext('2d'), { type: 'line', data: { labels: Object.keys(datasAgrupadas), datasets: [{ label: 'Volume Contado', data: Object.values(datasAgrupadas), borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.15)', fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+  chartTrendInstance = new Chart(document.getElementById('chart-trend').getContext('2d'), { type: 'line', data: { labels: Object.keys(datasAgrupadas), datasets: [{ label: 'Volume Contado', data: Object.valuesdatasAgrupadas), borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.15)', fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
   
   if (chartCatInstance) chartCatInstance.destroy(); 
   chartCatInstance = new Chart(document.getElementById('chart-cat').getContext('2d'), { type: 'doughnut', data: { labels: Object.keys(catsDivergentes), datasets: [{ data: Object.values(catsDivergentes), backgroundColor: ['#f87171', '#fbbf24', '#38bdf8', '#a78bfa', '#34d399'] }] }, options: { responsive: true, maintainAspectRatio: false } });
