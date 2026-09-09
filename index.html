@@ -13,7 +13,9 @@
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
+// ============================================
 // PONTE DE COMUNICAÇÃO GITHUB -> GOOGLE SHEETS
+// ============================================
 const GOOGLE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwxmQ2LLosh_ctiWTJ7aMDwBDtcummbBiRcLV7bKg5Xqkp_-44-xZx_oNih4xcf5h7Rj/exec";
 
 if (typeof google === 'undefined' || !google.script) {
@@ -416,22 +418,10 @@ select.input option { background: #0b0d14; color: #fff; }
     <div class="home-title">Escolha uma ação</div>
   </div>
   <div class="menu">
-    <button class="menu-btn b1" data-nav="contagem" style="display:none">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-      Contagem de Estoque
-    </button>
-    <button class="menu-btn b2" data-nav="cadastrar" style="display:none">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      Cadastrar / Editar Produtos
-    </button>
-    <button class="menu-btn b3" data-nav="relatorio" style="display:none">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      Dash de Relatorio
-    </button>
-    <button class="menu-btn b4" data-nav="notif" style="display:none">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-      Dash de Notificacoes
-    </button>
+    <button class="menu-btn b1" data-nav="contagem" style="display:none">Contagem de Estoque</button>
+    <button class="menu-btn b2" data-nav="cadastrar" style="display:none">Cadastrar / Editar Produtos</button>
+    <button class="menu-btn b3" data-nav="relatorio" style="display:none">Dash de Relatorio</button>
+    <button class="menu-btn b4" data-nav="notif" style="display:none">Dash de Notificacoes</button>
   </div>
 </div>
 
@@ -444,12 +434,10 @@ select.input option { background: #0b0d14; color: #fff; }
   <div class="page-body">
     <div class="card">
       <div class="card-title">MONTAR CARTAZ DE PROMOÇÃO</div>
-      
       <div class="input-group" style="margin-bottom:8px">
         <input class="input" id="cartaz-search" placeholder="Buscar produto no Cache ou digite o nome...">
       </div>
       <select class="input" id="cartaz-select-prod"><option value="" disabled selected>Selecione um produto...</option></select>
-      
       <div class="row" style="margin-top:4px">
         <div style="flex:2">
           <div class="card-title" style="margin-bottom:4px">NOME NO CARTAZ</div>
@@ -463,11 +451,8 @@ select.input option { background: #0b0d14; color: #fff; }
       <button class="btn-save" id="btn-print-cartaz" style="background:linear-gradient(135deg, #ec4899, #be185d);margin-top:10px">🖨️ Imprimir Cartaz em PDF</button>
     </div>
     <div class="card-title" style="margin-left:4px">PRÉ-VISUALIZAÇÃO DO CARTAZ</div>
-    
     <div class="poster-preview-box">
-      <div class="poster-header-banner">
-        <div class="poster-header-title">PROMOÇÃO</div>
-      </div>
+      <div class="poster-header-banner"><div class="poster-header-title">PROMOÇÃO</div></div>
       <div class="poster-body-content">
         <div class="poster-prod-title" id="prev-prod-title">REFRI SPRITE PET 600ML</div>
         <div class="poster-price-container">
@@ -483,9 +468,7 @@ select.input option { background: #0b0d14; color: #fff; }
 <!-- TELA CONTAGEM -->
 <div id="p-contagem" class="page">
   <div class="page-header">
-    <button class="back" data-nav="home">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Voltar
-    </button>
+    <button class="back" data-nav="home">Voltar</button>
     <div class="page-title">Contagem de Estoque</div>
     <button class="btn-cache-top" id="btn-cache-contagem">🔄 Atualizar Cache</button>
   </div>
@@ -499,15 +482,13 @@ select.input option { background: #0b0d14; color: #fff; }
       <div class="input-group">
         <input class="input" id="search-input" placeholder="Buscar por Nome, ID ou Cód. Barras...">
         <button class="btn-cam" id="btn-cam-search" title="Escanear com Câmera">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         </button>
       </div>
     </div>
     <div class="card">
       <div class="card-title">Selecionar Categoria</div>
-      <select class="input" id="filter-cat" style="margin-bottom:0">
-        <option value="TODAS">Todas as Categorias</option>
-      </select>
+      <select class="input" id="filter-cat" style="margin-bottom:0"><option value="TODAS">Todas as Categorias</option></select>
     </div>
     <div id="load-contagem" class="loading"><div class="spin"></div>Carregando produtos...</div>
     <div id="lista-contagem"></div>
@@ -518,9 +499,7 @@ select.input option { background: #0b0d14; color: #fff; }
 <!-- TELA CADASTRO -->
 <div id="p-cadastrar" class="page">
   <div class="page-header">
-    <button class="back" data-nav="home">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Voltar
-    </button>
+    <button class="back" data-nav="home">Voltar</button>
     <div class="page-title">Cadastrar Produtos</div>
     <button class="btn-cache-top" id="btn-cache-cadastrar">🔄 Atualizar Cache</button>
   </div>
@@ -536,7 +515,7 @@ select.input option { background: #0b0d14; color: #fff; }
         <div class="input-group" style="flex:1.4;min-width:160px">
           <input class="input" id="ncodbarra" placeholder="Cód. de Barras">
           <button class="btn-cam" id="btn-cam-cad" title="Escanear com Câmera">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
           </button>
           <button class="btn-search-web" id="btn-search-web" title="Buscar dados do produto na Internet">🔍</button>
         </div>
@@ -552,7 +531,7 @@ select.input option { background: #0b0d14; color: #fff; }
       <div class="input-group" style="margin-bottom:12px">
         <input class="input" id="search-cad-input" placeholder="Pesquisar por Nome, ID ou Cód. Barras...">
         <button class="btn-cam" id="btn-cam-cad-search" title="Escanear para Pesquisar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         </button>
       </div>
       <div id="load-prod" class="loading" style="display:none"><div class="spin"></div></div>
@@ -564,7 +543,7 @@ select.input option { background: #0b0d14; color: #fff; }
 <!-- TELA DASHBOARD BI -->
 <div id="p-relatorio" class="page">
   <div class="page-header">
-    <button class="back" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Voltar</button>
+    <button class="back" data-nav="home">Voltar</button>
     <div class="page-title">Visão geral de estoque</div>
   </div>
   <div class="page-body">
@@ -597,7 +576,7 @@ select.input option { background: #0b0d14; color: #fff; }
 <!-- TELA HISTÓRICO DE RELATÓRIOS -->
 <div id="p-historico" class="page">
   <div class="page-header">
-    <button class="back" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg> Voltar</button>
+    <button class="back" data-nav="home">Voltar</button>
     <div class="page-title">Histórico de Relatórios</div>
   </div>
   <div class="page-body">
@@ -610,7 +589,7 @@ select.input option { background: #0b0d14; color: #fff; }
 <!-- TELA MÓDULO: VALIDADES -->
 <div id="p-validade" class="page">
   <div class="page-header">
-    <button class="back" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg> Voltar</button>
+    <button class="back" data-nav="home">Voltar</button>
     <div class="page-title">Controle de Validades</div>
   </div>
   <div class="page-body">
@@ -647,7 +626,7 @@ select.input option { background: #0b0d14; color: #fff; }
 <!-- TELA CONTROLE DE NOTA FISCAL E CLIENTES FATURAMENTO -->
 <div id="p-notafiscal" class="page">
   <div class="page-header">
-    <button class="back" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg> Voltar</button>
+    <button class="back" data-nav="home">Voltar</button>
     <div class="page-title">Notas Fiscais & Faturamento</div>
   </div>
   <div class="page-body">
@@ -672,21 +651,21 @@ select.input option { background: #0b0d14; color: #fff; }
 
 <!-- TELAS EXCLUSIVAS DE ADM -->
 <div id="p-admin-users" class="page">
-  <div class="page-header"><button class="back" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg> Voltar</button><div class="page-title">Gestão de Usuários</div></div>
+  <div class="page-header"><button class="back" data-nav="home">Voltar</button><div class="page-title">Gestão de Usuários</div></div>
   <div class="page-body"><div id="load-users" class="loading"><div class="spin"></div>Buscando usuários...</div><div id="admin-user-list"></div></div>
 </div>
 <div id="p-admin-logs" class="page">
-  <div class="page-header"><button class="back" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg> Voltar</button><div class="page-title">Logs de Auditoria</div></div>
+  <div class="page-header"><button class="back" data-nav="home">Voltar</button><div class="page-title">Logs de Auditoria</div></div>
   <div class="page-body"><div id="load-logs" class="loading"><div class="spin"></div>Buscando logs recentes...</div><div id="admin-logs-list"></div></div>
 </div>
 <div id="p-admin-aprovacao" class="page">
-  <div class="page-header"><button class="back" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg> Voltar</button><div class="page-title">Aprovação de Acessos</div></div>
+  <div class="page-header"><button class="back" data-nav="home">Voltar</button><div class="page-title">Aprovação de Acessos</div></div>
   <div class="page-body"><div id="load-admin" class="loading"><div class="spin"></div>Buscando solicitações...</div><div id="admin-pending-list"></div></div>
 </div>
 
 <!-- TELA NOTIFICAÇÕES -->
 <div id="p-notif" class="page">
-  <div class="page-header"><button class="back" data-nav="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg> Voltar</button><div class="page-title">Notificacoes</div></div>
+  <div class="page-header"><button class="back" data-nav="home">Voltar</button><div class="page-title">Notificacoes</div></div>
   <div class="page-body"><div id="load-notif" class="loading"><div class="spin"></div>Analisando estoque...</div><div id="notif-list"></div></div>
 </div>
 
@@ -811,7 +790,6 @@ select.input option { background: #0b0d14; color: #fff; }
   </div>
 </div>
 
-<!-- MODAL ADICIONAR NOVO PRODUTOR/CLIENTE NF -->
 <div class="modal-cam" id="modal-add-nf-cliente">
   <div class="modal-cam-content" style="max-width:440px;text-align:left;padding:22px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:10px;">
@@ -1352,7 +1330,6 @@ window.exibirModalRelatorio = function(resumo) {
   document.getElementById('rel-tbody').innerHTML = html;
   document.getElementById('modal-relatorio').style.display = 'flex';
 };
-})();
 </script>
 </body>
 </html>
