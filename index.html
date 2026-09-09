@@ -428,6 +428,7 @@ select.input option { background: #0b0d14; color: #fff; }
       <div class="input-group" style="margin-bottom:8px">
         <input class="input" id="cartaz-search" placeholder="Buscar produto no Cache ou digite o nome...">
       </div>
+      <select class="input" id="cartaz-filter-cat"><option value="TODAS">Todas as Categorias</option></select>
       <select class="input" id="cartaz-select-prod"><option value="" disabled selected>Selecione um produto...</option></select>
       <div class="row" style="margin-top:4px">
         <div style="flex:2">
@@ -592,6 +593,7 @@ select.input option { background: #0b0d14; color: #fff; }
           <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         </button>
       </div>
+      <select class="input" id="val-filter-cat"><option value="TODAS">Todas as Categorias</option></select>
       <select class="input" id="val-select-prod"><option value="" disabled selected>Selecione um Produto...</option></select>
       <div class="row">
         <div style="flex:1">
@@ -1006,14 +1008,12 @@ window.abrirScannerAoVivo = function(targetInputId, callbackOnScan) {
     if (activeScanCallback) activeScanCallback();
   }
 
-  // 1. Tenta abrir a câmera traseira do celular
   html5QrCodeLive.start(
     { facingMode: "environment" },
     config,
     aoEscanear,
     function() {}
   ).catch(function() {
-    // 2. Fallback para webcam do computador / câmera frontal
     html5QrCodeLive.start(
       { facingMode: "user" },
       config,
@@ -1058,7 +1058,6 @@ window.pararScannerAoVivo = function() {
 // INICIALIZAÇÃO DE BINDINGS
 document.addEventListener('DOMContentLoaded', function() {
 
-  // VINCULAÇÃO DOS BOTÕES DE NAVEGAÇÃO
   document.querySelectorAll('[data-nav]').forEach(function(btn){
     btn.addEventListener('click', function(){
       var target = this.getAttribute('data-nav');
@@ -1068,7 +1067,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // LOGIN (COM TIMEOUT AUMENTADO PARA 25 SEGUNDOS)
   safeAddEvent('btn-do-login', 'click', function(){
     var u = document.getElementById('login-user').value.trim();
     var p = document.getElementById('login-pass').value.trim();
@@ -1082,7 +1080,7 @@ document.addEventListener('DOMContentLoaded', function() {
       btn.disabled = false;
       btn.textContent = 'ENTRAR';
       window.toast('Servidor demorou a responder. Clique em ENTRAR novamente.', 'er');
-    }, 31000);
+    }, 30000);
 
     google.script.run
       .withSuccessHandler(function(res){
@@ -1124,7 +1122,6 @@ document.addEventListener('DOMContentLoaded', function() {
       .fazerLogin(u, p);
   });
 
-  // SOLICITAÇÃO
   safeAddEvent('btn-send-solicitacao', 'click', function(){
     var nome = document.getElementById('sol-nome').value.trim();
     var funcao = document.getElementById('sol-funcao').value.trim();
@@ -1141,7 +1138,6 @@ document.addEventListener('DOMContentLoaded', function() {
       .solicitarAcesso({ nome: nome, funcao: funcao, local: local, telefone: telefone });
   });
 
-  // MANIPULADOR DE FOTO ENVIADA DA GALERIA
   safeAddEvent('file-cam-input', 'change', async function(e) {
     if (!e.target.files || e.target.files.length === 0) return;
     var imageFile = e.target.files[0];
@@ -1191,7 +1187,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // BINDINGS CÂMERA AO VIVO
   safeAddEvent('btn-close-scanner-live', 'click', window.pararScannerAoVivo);
   safeAddEvent('btn-switch-photo-mode', 'click', function() {
     window.pararScannerAoVivo();
@@ -1205,6 +1200,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // CARTAZ PROMOCIONAL
   safeAddEvent('cartaz-search', 'input', window.debounce(function() { window.popularSelectCartaz(); }, 300));
+  safeAddEvent('cartaz-filter-cat', 'change', function() { window.popularSelectCartaz(); });
   safeAddEvent('cartaz-select-prod', 'change', function() {
     var id = this.value;
     var prod = produtosContagem.find(function(p){ return String(p.id) === String(id); });
@@ -1216,7 +1212,47 @@ document.addEventListener('DOMContentLoaded', function() {
   safeAddEvent('cartaz-prod-name', 'input', window.atualizarPreviewCartaz);
   safeAddEvent('cartaz-prod-price', 'input', window.atualizarPreviewCartaz);
 
-  // IMPRESSÃO DE RELATÓRIO COM APENAS ASSINATURAS DE TURNOS
+  // VALIDADES FILTROS
+  safeAddEvent('val-search-input', 'input', window.debounce(function() { window.popularSelectValidades(); }, 300));
+  safeAddEvent('val-filter-cat', 'change', function() { window.popularSelectValidades(); });
+
+  // BINDING SALVAR PERMISSÕES DO USUÁRIO
+  safeAddEvent('btn-save-prof-perms', 'click', function() {
+    var userId = document.getElementById('prof-user-id').value;
+    if (!userId) { window.toast('Usuário não selecionado!', 'er'); return; }
+
+    var perms = [];
+    if (document.getElementById('prof-p-contagem').checked) perms.push('contagem');
+    if (document.getElementById('prof-p-cadastrar').checked) perms.push('cadastrar');
+    if (document.getElementById('prof-p-relatorio').checked) perms.push('relatorio');
+    if (document.getElementById('prof-p-notif').checked) perms.push('notif');
+    if (document.getElementById('prof-p-validade').checked) perms.push('validade');
+    if (document.getElementById('prof-p-cartaz').checked) perms.push('cartaz');
+    if (document.getElementById('prof-p-notafiscal').checked) perms.push('notafiscal');
+
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = 'Salvando...';
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        btn.disabled = false;
+        btn.textContent = 'Salvar Alterações de Permissões';
+        window.toast(res ? res.mensagem : 'Permissões atualizadas com sucesso!', res && res.sucesso ? 'ok' : 'er');
+        if (res && res.sucesso) {
+          document.getElementById('modal-perfil-user').style.display = 'none';
+          window.carregarUsuariosAdmin();
+        }
+      })
+      .withFailureHandler(function(err) {
+        btn.disabled = false;
+        btn.textContent = 'Salvar Alterações de Permissões';
+        window.toast('Erro ao salvar permissões.', 'er');
+      })
+      .salvarPermissoesUsuario(userId, perms.join(','), usuarioLogado ? usuarioLogado.usuario : '');
+  });
+
+  // IMPRESSÃO DE RELATÓRIO
   safeAddEvent('btn-print-relatorio', 'click', function() {
     var modalContent = document.querySelector('#modal-relatorio .modal-cam-content');
     if (!modalContent) return;
@@ -1245,7 +1281,6 @@ document.addEventListener('DOMContentLoaded', function() {
     janela.document.write('</style></head><body>');
     janela.document.write(conteudo);
     
-    // Rodapé exclusivo para os Turnos
     janela.document.write('<div style="margin-top: 45px; font-size: 12px; font-weight: bold;">');
     janela.document.write('  <div style="display:flex; justify-content:space-between; margin-bottom: 25px;">');
     janela.document.write('    <span style="flex:1;">Responsável pelo Turno Atual......: _____________________________________</span>');
@@ -1316,7 +1351,6 @@ document.addEventListener('DOMContentLoaded', function() {
   safeAddEvent('btn-close-prof', 'click', function() { document.getElementById('modal-perfil-user').style.display = 'none'; });
   safeAddEvent('btn-close-add-nf-modal', 'click', function() { document.getElementById('modal-add-nf-cliente').style.display = 'none'; });
 
-  // BINDING SINCRONIZAR FOTOS WEB
   safeAddEvent('btn-sync-fotos', 'click', function() {
     var btn = this; btn.textContent = '⏳ Sincronizando...'; window.toast('Buscando fotos na internet...', 'ok');
     google.script.run.withSuccessHandler(function(res){
@@ -1334,7 +1368,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }).sincronizarFotosEmLote();
   });
 
-  // BINDING IMPRIMIR CARTAZ
   safeAddEvent('btn-print-cartaz', 'click', function() {
     var nome = document.getElementById('prev-prod-title').textContent;
     var intPart = document.getElementById('prev-price-int').textContent;
@@ -1374,7 +1407,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() { janela.print(); janela.close(); }, 350);
   });
 
-  // BINDING NOVO CLIENTE NF
   safeAddEvent('btn-open-add-nf-modal', 'click', function() {
     document.getElementById('modal-add-nf-cliente').style.display = 'flex';
     document.getElementById('add-nf-tipo').value = abaNFAtiva === 'fat' ? 'FAT' : 'NF';
@@ -1872,17 +1904,31 @@ window.carregarValidades = function() {
 };
 
 window.popularSelectValidades = function() {
-  var sel = document.getElementById('val-select-prod');
+  var selProd = document.getElementById('val-select-prod');
+  var selCat = document.getElementById('val-filter-cat');
   var busca = (document.getElementById('val-search-input').value || '').toLowerCase().trim();
+  var catFiltro = selCat ? selCat.value : 'TODAS';
   
+  if (selCat && selCat.options.length <= 1 && produtosContagem.length > 0) {
+    var categorias = new Set();
+    produtosContagem.forEach(function(p) { if (p.categoria) categorias.add(p.categoria.toUpperCase()); });
+    var cHtml = '<option value="TODAS">Todas as Categorias</option>';
+    categorias.forEach(function(cat) { cHtml += '<option value="' + cat + '">' + cat + '</option>'; });
+    selCat.innerHTML = cHtml;
+    selCat.value = catFiltro;
+  }
+
   var filtrados = produtosContagem.filter(function(p) {
-    return !busca || (p.nome || '').toLowerCase().indexOf(busca) > -1 || (p.id || '').toString().toLowerCase().indexOf(busca) > -1 || (p.codBarra || '').toString().toLowerCase().indexOf(busca) > -1;
+    var matchBusca = !busca || (p.nome || '').toLowerCase().indexOf(busca) > -1 || (p.id || '').toString().toLowerCase().indexOf(busca) > -1 || (p.codBarra || '').toString().toLowerCase().indexOf(busca) > -1;
+    var matchCat = (catFiltro === 'TODAS') || ((p.categoria || '').toUpperCase() === catFiltro);
+    return matchBusca && matchCat;
   });
+  
   var html = '<option value="" disabled selected>Selecione um Produto (' + filtrados.length + ')...</option>';
-  filtrados.slice(0, 50).forEach(function(p) {
+  filtrados.slice(0, 100).forEach(function(p) {
     html += '<option value="' + p.id + '">' + p.nome + ' (ID: ' + p.id + ')</option>';
   });
-  sel.innerHTML = html;
+  selProd.innerHTML = html;
 };
 
 window.renderListaValidades = function() {
@@ -1945,17 +1991,31 @@ window.prepararTelaCartaz = function() {
 };
 
 window.popularSelectCartaz = function() {
-  var sel = document.getElementById('cartaz-select-prod');
+  var selProd = document.getElementById('cartaz-select-prod');
+  var selCat = document.getElementById('cartaz-filter-cat');
   var busca = (document.getElementById('cartaz-search').value || '').toLowerCase().trim();
+  var catFiltro = selCat ? selCat.value : 'TODAS';
   
+  if (selCat && selCat.options.length <= 1 && produtosContagem.length > 0) {
+    var categorias = new Set();
+    produtosContagem.forEach(function(p) { if (p.categoria) categorias.add(p.categoria.toUpperCase()); });
+    var cHtml = '<option value="TODAS">Todas as Categorias</option>';
+    categorias.forEach(function(cat) { cHtml += '<option value="' + cat + '">' + cat + '</option>'; });
+    selCat.innerHTML = cHtml;
+    selCat.value = catFiltro;
+  }
+
   var filtrados = produtosContagem.filter(function(p) {
-    return !busca || (p.nome || '').toLowerCase().indexOf(busca) > -1 || (p.id || '').toString().toLowerCase().indexOf(busca) > -1 || (p.codBarra || '').toString().toLowerCase().indexOf(busca) > -1;
+    var matchBusca = !busca || (p.nome || '').toLowerCase().indexOf(busca) > -1 || (p.id || '').toString().toLowerCase().indexOf(busca) > -1 || (p.codBarra || '').toString().toLowerCase().indexOf(busca) > -1;
+    var matchCat = (catFiltro === 'TODAS') || ((p.categoria || '').toUpperCase() === catFiltro);
+    return matchBusca && matchCat;
   });
-  var html = '<option value="" disabled selected>Selecione um Produto...</option>';
-  filtrados.slice(0, 50).forEach(function(p) {
+  
+  var html = '<option value="" disabled selected>Selecione um Produto (' + filtrados.length + ')...</option>';
+  filtrados.slice(0, 100).forEach(function(p) {
     html += '<option value="' + p.id + '">' + p.nome + '</option>';
   });
-  sel.innerHTML = html;
+  selProd.innerHTML = html;
 };
 
 window.atualizarPreviewCartaz = function() {
