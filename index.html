@@ -1111,7 +1111,7 @@ document.addEventListener('DOMContentLoaded', function() {
       btn.disabled = false;
       btn.textContent = 'ENTRAR';
       window.toast('Servidor demorou a responder. Clique em ENTRAR novamente.', 'er');
-    }, 35000);
+    }, 32000);
 
     google.script.run
       .withSuccessHandler(function(res){
@@ -1231,7 +1231,7 @@ document.addEventListener('DOMContentLoaded', function() {
   safeAddEvent('cartaz-prod-name', 'input', window.atualizarPreviewCartaz);
   safeAddEvent('cartaz-prod-price', 'input', window.atualizarPreviewCartaz);
 
-  // BOTÕES DE ATUALIZAÇÃO DE CACHE (COM PROTECTION CONTRA TRAVAMENTO)
+  // BOTÕES DE ATUALIZAÇÃO DE CACHE
   safeAddEvent('btn-cache-contagem', 'click', function() {
     var btn = this; btn.disabled = true; btn.textContent = '🔄 Atualizando...';
     google.script.run
@@ -1262,7 +1262,7 @@ document.addEventListener('DOMContentLoaded', function() {
       .atualizarCache();
   });
 
-  // VALIDADES FILTROS E SALVAMENTO PRINCIPAL (PAYLOAD COMPLETO MULTI-CAMPO)
+  // VALIDADES FILTROS E SALVAMENTO PRINCIPAL (ENVIA DADOS MULTI-CAMPO COMPATÍVEIS)
   safeAddEvent('val-search-input', 'input', window.debounce(function() { window.popularSelectValidades(); }, 300));
   safeAddEvent('val-filter-cat', 'change', function() { window.popularSelectValidades(); });
 
@@ -2452,7 +2452,7 @@ window.processarERenderizarBI = function() {
   document.getElementById('bi-kpi-acuracia').textContent = (filtrados.length > 0 ? Math.round((totOk / filtrados.length) * 100) : 100) + '%';
   
   if (chartTrendInstance) chartTrendInstance.destroy(); 
-  chartTrendInstance = new Chart(document.getElementById('chart-trend').getContext('2d'), { type: 'line', data: { labels: Object.keys(datasAgrupadas), datasets: [{ label: 'Volume Contado', data: Object.valuesdatasAgrupadas), borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.15)', fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+  chartTrendInstance = new Chart(document.getElementById('chart-trend').getContext('2d'), { type: 'line', data: { labels: Object.keys(datasAgrupadas), datasets: [{ label: 'Volume Contado', data: Object.values(datasAgrupadas), borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.15)', fill: true }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
   
   if (chartCatInstance) chartCatInstance.destroy(); 
   chartCatInstance = new Chart(document.getElementById('chart-cat').getContext('2d'), { type: 'doughnut', data: { labels: Object.keys(catsDivergentes), datasets: [{ data: Object.values(catsDivergentes), backgroundColor: ['#f87171', '#fbbf24', '#38bdf8', '#a78bfa', '#34d399'] }] }, options: { responsive: true, maintainAspectRatio: false } });
