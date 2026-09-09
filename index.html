@@ -13,9 +13,7 @@
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
-// ============================================
-// PONTE DE COMUNICAÇÃO GITHUB -> GOOGLE SHEETS
-// ============================================
+
 const GOOGLE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwKUDf3Zyn3gr21Pi35hfJttW-ImmSFsxzkF43MAWaVrooJ-Jlxs5-lrXIofUGtrkw2tQ/exec";
 
 if (typeof google === 'undefined' || !google.script || !google.script.run) {
@@ -794,7 +792,6 @@ select.input option { background: #0b0d14; color: #fff; }
   </div>
 </div>
 
-<!-- MODAL ADICIONAR NOVO PRODUTOR/CLIENTE NF -->
 <div class="modal-cam" id="modal-add-nf-cliente">
   <div class="modal-cam-content" style="max-width:440px;text-align:left;padding:22px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:10px;">
@@ -978,7 +975,7 @@ window.gerarCodigoAleatorio = function(prefixo) {
 };
 
 // ============================================
-// SCANNER AO VIVO COM MIRA LASER
+// SCANNER AO VIVO COM MIRA LASER E FOTO
 // ============================================
 window.abrirScannerAoVivo = function(targetInputId, callbackOnScan) {
   activeTargetInputId = targetInputId;
@@ -1003,7 +1000,7 @@ window.abrirScannerAoVivo = function(targetInputId, callbackOnScan) {
       var input = document.getElementById(activeTargetInputId);
       if (input) {
         input.value = decodedText;
-        input.dispatchEvent(new Event('input'));
+        input.dispatchEvent(new Event('input', { bubbles: true }));
       }
       window.toast('Lido ao vivo: ' + decodedText, 'ok');
       if (activeScanCallback) activeScanCallback();
@@ -1112,6 +1109,52 @@ document.addEventListener('DOMContentLoaded', function() {
       .solicitarAcesso({ nome: nome, funcao: funcao, local: local, telefone: telefone });
   });
 
+  // MANIPULADOR DE FOTO ENVIADA DA GALERIA
+  safeAddEvent('file-cam-input', 'change', async function(e) {
+    if (!e.target.files || e.target.files.length === 0) return;
+    var imageFile = e.target.files[0];
+    window.toast('Processando imagem...', 'ok');
+    
+    try {
+      var decodedText = null;
+      
+      if ('BarcodeDetector' in window) {
+        try {
+          var detector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'qr_code'] });
+          var bitmap = await createImageBitmap(imageFile);
+          var barcodes = await detector.detect(bitmap);
+          if (barcodes && barcodes.length > 0) {
+            decodedText = barcodes[0].rawValue;
+          }
+        } catch(eDetector) {
+          console.log("BarcodeDetector nativo falhou, usando Html5Qrcode...", eDetector);
+        }
+      }
+      
+      if (!decodedText) {
+        var html5QrCode = new Html5Qrcode("reader");
+        decodedText = await html5QrCode.scanFile(imageFile, true);
+      }
+
+      if (decodedText) {
+        var input = document.getElementById(activeTargetInputId);
+        if (input) {
+          input.value = decodedText;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        window.toast('Lido com sucesso: ' + decodedText, 'ok');
+        if (activeScanCallback) activeScanCallback();
+      } else {
+        window.toast('Código de barras não identificado na imagem. Foque melhor.', 'er');
+      }
+    } catch(err) {
+      console.error("Erro no processamento da foto:", err);
+      window.toast('Não foi possível ler o código na foto.', 'er');
+    } finally {
+      e.target.value = '';
+    }
+  });
+
   // BINDINGS CÂMERA AO VIVO
   safeAddEvent('btn-close-scanner-live', 'click', window.pararScannerAoVivo);
   safeAddEvent('btn-switch-photo-mode', 'click', function() {
@@ -1123,6 +1166,53 @@ document.addEventListener('DOMContentLoaded', function() {
   safeAddEvent('btn-cam-cad', 'click', function() { window.abrirScannerAoVivo('ncodbarra', window.consultarProdutoInternet); });
   safeAddEvent('btn-cam-cad-search', 'click', function() { window.abrirScannerAoVivo('search-cad-input', function() { window.renderListaCadastrados(); }); });
   safeAddEvent('btn-cam-val-search', 'click', function() { window.abrirScannerAoVivo('val-search-input', window.popularSelectValidades); });
+
+  // CARTAZ PROMOCIONAL
+  safeAddEvent('cartaz-search', 'input', window.debounce(function() { window.popularSelectCartaz(); }, 300));
+  safeAddEvent('cartaz-select-prod', 'change', function() {
+    var id = this.value;
+    var prod = produtosContagem.find(function(p){ return String(p.id) === String(id); });
+    if (prod) {
+      document.getElementById('cartaz-prod-name').value = prod.nome.toUpperCase();
+      window.atualizarPreviewCartaz();
+    }
+  });
+  safeAddEvent('cartaz-prod-name', 'input', window.atualizarPreviewCartaz);
+  safeAddEvent('cartaz-prod-price', 'input', window.atualizarPreviewCartaz);
+
+  // IMPRESSÃO DE RELATÓRIO
+  safeAddEvent('btn-print-relatorio', 'click', function() {
+    var modalContent = document.querySelector('#modal-relatorio .modal-cam-content');
+    if (!modalContent) return;
+    
+    var conteudo = modalContent.innerHTML;
+    var janela = window.open('', '_blank');
+    if (!janela) {
+      window.toast('Permita pop-ups no navegador para imprimir.', 'er');
+      return;
+    }
+    
+    janela.document.write('<html><head><title>Relatório de Contagem</title>');
+    janela.document.write('<style>');
+    janela.document.write('body { font-family: sans-serif; padding: 20px; color: #000; background: #fff; }');
+    janela.document.write('.rel-stats { display: flex; gap: 10px; margin: 20px 0; }');
+    janela.document.write('.rel-stat-card { border: 1px solid #ccc; padding: 10px; text-align: center; flex: 1; border-radius: 8px;}');
+    janela.document.write('table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; text-align: left; }');
+    janela.document.write('th { border-bottom: 2px solid #000; padding: 8px; }');
+    janela.document.write('td { border-bottom: 1px solid #ddd; padding: 8px; }');
+    janela.document.write('.no-print { display: none !important; }');
+    janela.document.write('.badge-status { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; }');
+    janela.document.write('.b-ok { background: #d1fae5; color: #059669; }');
+    janela.document.write('.b-falta { background: #fee2e2; color: #dc2626; }');
+    janela.document.write('.b-sobra { background: #fef3c7; color: #d97706; }');
+    janela.document.write('@media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }');
+    janela.document.write('</style></head><body>');
+    janela.document.write(conteudo);
+    janela.document.write('</body></html>');
+    janela.document.close();
+    janela.focus();
+    setTimeout(function() { janela.print(); janela.close(); }, 350);
+  });
 
   // OUTROS BINDINGS
   safeAddEvent('btn-open-tools', 'click', function(){ document.getElementById('drawer-tools').style.display = 'flex'; });
@@ -1820,17 +1910,24 @@ window.popularSelectCartaz = function() {
 };
 
 window.atualizarPreviewCartaz = function() {
-  var nome = (document.getElementById('cartaz-prod-name').value || 'REFRI SPRITE PET 600ML').toUpperCase();
-  var precoStr = (document.getElementById('cartaz-prod-price').value || '5,00').replace('.', ',');
+  var nomeInput = document.getElementById('cartaz-prod-name');
+  var precoInput = document.getElementById('cartaz-prod-price');
+  if (!nomeInput || !precoInput) return;
   
-  document.getElementById('prev-prod-title').textContent = nome;
+  var nome = (nomeInput.value || 'REFRI SPRITE PET 600ML').toUpperCase();
+  var precoStr = (precoInput.value || '5,00').replace('.', ',');
+  
+  var titleEl = document.getElementById('prev-prod-title');
+  if (titleEl) titleEl.textContent = nome;
   
   var partes = precoStr.split(',');
   var intPart = partes[0] || '0';
   var decPart = ',' + (partes[1] ? (partes[1] + '00').slice(0, 2) : '00');
   
-  document.getElementById('prev-price-int').textContent = intPart;
-  document.getElementById('prev-price-dec').textContent = decPart;
+  var intEl = document.getElementById('prev-price-int');
+  var decEl = document.getElementById('prev-price-dec');
+  if (intEl) intEl.textContent = intPart;
+  if (decEl) decEl.textContent = decPart;
 };
 
 // TELAS DE ADM
