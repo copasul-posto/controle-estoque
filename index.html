@@ -979,7 +979,7 @@ window.gerarCodigoAleatorio = function(prefixo) {
 };
 
 // ============================================
-// SCANNER AO VIVO COM MIRA LASER, FULL HD E ZOOM
+// SCANNER AO VIVO COM FALLBACK (CELULAR/PC)
 // ============================================
 window.abrirScannerAoVivo = function(targetInputId, callbackOnScan) {
   activeTargetInputId = targetInputId;
@@ -992,7 +992,6 @@ window.abrirScannerAoVivo = function(targetInputId, callbackOnScan) {
     html5QrCodeLive = new Html5Qrcode("interactive-reader");
   }
 
-  // Faixa estreita (65px) apenas para os traços do código de barras
   const config = { 
     fps: 20, 
     qrbox: { width: 280, height: 65 },
@@ -1005,53 +1004,36 @@ window.abrirScannerAoVivo = function(targetInputId, callbackOnScan) {
     ]
   };
 
-  const cameraConstraints = { 
-    facingMode: "environment",
-    width: { ideal: 1920 },
-    height: { ideal: 1080 },
-    advanced: [{ focusMode: "continuous" }]
-  };
-
-  html5QrCodeLive.start(
-    cameraConstraints,
-    config,
-    function(decodedText) {
-      window.pararScannerAoVivo();
-      var input = document.getElementById(activeTargetInputId);
-      if (input) {
-        var limpo = decodedText.trim();
-        if (/^\d[\d\s-]*\d$/.test(limpo)) {
-          limpo = limpo.replace(/\D/g, '');
-        }
-        input.value = limpo;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
+  function aoEscanear(decodedText) {
+    window.pararScannerAoVivo();
+    var input = document.getElementById(activeTargetInputId);
+    if (input) {
+      var limpo = decodedText.trim();
+      if (/^\d[\d\s-]*\d$/.test(limpo)) {
+        limpo = limpo.replace(/\D/g, '');
       }
-      window.toast('Lido ao vivo: ' + decodedText, 'ok');
-      if (activeScanCallback) activeScanCallback();
-    },
-    function(errorMessage) {}
-  ).catch(function(err) {
-    // Fallback caso a resolução 1080p falhe no aparelho
+      input.value = limpo;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    window.toast('Lido ao vivo: ' + decodedText, 'ok');
+    if (activeScanCallback) activeScanCallback();
+  }
+
+  // 1. Tenta abrir a câmera traseira do celular
+  html5QrCodeLive.start(
+    { facingMode: "environment" },
+    config,
+    aoEscanear,
+    function() {}
+  ).catch(function() {
+    // 2. Fallback para webcam do computador / câmera frontal
     html5QrCodeLive.start(
-      { facingMode: "environment" },
+      { facingMode: "user" },
       config,
-      function(decodedText) {
-        window.pararScannerAoVivo();
-        var input = document.getElementById(activeTargetInputId);
-        if (input) {
-          var limpo = decodedText.trim();
-          if (/^\d[\d\s-]*\d$/.test(limpo)) {
-            limpo = limpo.replace(/\D/g, '');
-          }
-          input.value = limpo;
-          input.dispatchEvent(new Event('input', { bubbles: true }));
-        }
-        window.toast('Lido ao vivo: ' + decodedText, 'ok');
-        if (activeScanCallback) activeScanCallback();
-      },
-      function(e2) {}
-    ).catch(function(err2) {
-      window.toast('Ative a permissão de câmera no navegador.', 'er');
+      aoEscanear,
+      function() {}
+    ).catch(function() {
+      window.toast('Não foi possível acessar a câmera do dispositivo.', 'er');
     });
   });
 };
@@ -1069,7 +1051,7 @@ window.alternarZoom = function() {
       track.applyConstraints({ advanced: [{ zoom: zoomAtual }] });
       window.toast('Zoom: ' + zoomAtual + 'x', 'ok');
     } else {
-      window.toast('Zoom óptico/digital não suportado no navegador.', 'w');
+      window.toast('Zoom não suportado no navegador do computador.', 'w');
     }
   }
 };
@@ -1099,7 +1081,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // LOGIN
+  // LOGIN (COM TIMEOUT AUMENTADO PARA 25 SEGUNDOS)
   safeAddEvent('btn-do-login', 'click', function(){
     var u = document.getElementById('login-user').value.trim();
     var p = document.getElementById('login-pass').value.trim();
@@ -1112,8 +1094,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var timerTrava = setTimeout(function() {
       btn.disabled = false;
       btn.textContent = 'ENTRAR';
-      window.toast('Conexão lenta. Tente novamente.', 'er');
-    }, 27000);
+      window.toast('Servidor demorou a responder. Clique em ENTRAR novamente.', 'er');
+    }, 25000);
 
     google.script.run
       .withSuccessHandler(function(res){
