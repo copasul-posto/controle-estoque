@@ -13,9 +13,7 @@
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
-// ============================================
-// PONTE DE COMUNICAÇÃO GITHUB -> GOOGLE SHEETS
-// ============================================
+
 const GOOGLE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwKUDf3Zyn3gr21Pi35hfJttW-ImmSFsxzkF43MAWaVrooJ-Jlxs5-lrXIofUGtrkw2tQ/exec";
 
 if (typeof google === 'undefined' || !google.script || !google.script.run) {
@@ -1095,7 +1093,7 @@ document.addEventListener('DOMContentLoaded', function() {
       btn.disabled = false;
       btn.textContent = 'ENTRAR';
       window.toast('Servidor demorou a responder. Clique em ENTRAR novamente.', 'er');
-    }, 25000);
+    }, 30000);
 
     google.script.run
       .withSuccessHandler(function(res){
