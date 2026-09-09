@@ -13,7 +13,9 @@
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 <script>
-
+// ============================================
+// PONTE DE COMUNICAÇÃO GITHUB -> GOOGLE SHEETS
+// ============================================
 const GOOGLE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwKUDf3Zyn3gr21Pi35hfJttW-ImmSFsxzkF43MAWaVrooJ-Jlxs5-lrXIofUGtrkw2tQ/exec";
 
 if (typeof google === 'undefined' || !google.script || !google.script.run) {
@@ -212,14 +214,14 @@ select.input option { background: #0b0d14; color: #fff; }
 .btn-save:hover { filter: brightness(1.1); transform: translateY(-2px); }
 .btn-save:disabled { background: rgba(255,255,255,0.1); color: #64748b; box-shadow: none; cursor: not-allowed; transform: none; filter: none; }
 
-/* SCANNER AO VIVO COM MIRA LASER */
+/* SCANNER AO VIVO COM MIRA LASER ESTREITA */
 .scanner-laser-box {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 82%; height: 160px;
+  width: 85%; height: 68px;
   border: 2px solid #22c55e;
-  border-radius: 16px;
-  box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.6);
+  border-radius: 12px;
+  box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.7);
   pointer-events: none; z-index: 10;
 }
 .laser-line {
@@ -671,7 +673,7 @@ select.input option { background: #0b0d14; color: #fff; }
   <div class="page-body"><div id="load-notif" class="loading"><div class="spin"></div>Analisando estoque...</div><div id="notif-list"></div></div>
 </div>
 
-<!-- MODAL SCANNER AO VIVO COM MIRA LASER -->
+<!-- MODAL SCANNER AO VIVO COM MIRA LASER E ZOOM -->
 <div class="modal-cam" id="modal-scanner-live">
   <div class="modal-cam-content" style="max-width:480px; padding:20px;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
@@ -684,8 +686,9 @@ select.input option { background: #0b0d14; color: #fff; }
       <div class="scanner-laser-box"><div class="laser-line"></div></div>
     </div>
     
-    <div style="font-size:12px; color:#94a3b8; margin-top:12px;">Posicione o código de barras no centro da mira.</div>
-    <button class="btn-more" id="btn-switch-photo-mode" style="margin-top:12px;">📷 Ou Tirar Foto da Galeria</button>
+    <div style="font-size:12px; color:#94a3b8; margin-top:12px;">Posicione APENAS as barras na faixa verde central.</div>
+    <button class="btn-more" id="btn-zoom-toggle" onclick="window.alternarZoom()" style="margin-top:8px; background: rgba(99,102,241,0.2); border-color: #6366f1; color: #a5b4fc;">🔍 Alternar Zoom (2.5x)</button>
+    <button class="btn-more" id="btn-switch-photo-mode" style="margin-top:8px;">📷 Ou Tirar Foto da Galeria</button>
   </div>
 </div>
 
@@ -922,6 +925,7 @@ var chartTrendInstance = null;
 var chartCatInstance = null;
 var rawBiData = null;
 var html5QrCodeLive = null;
+var zoomAtual = 1;
 
 // HELPER SEGURO DE EVENTOS
 function safeAddEvent(id, evt, fn) {
@@ -975,11 +979,12 @@ window.gerarCodigoAleatorio = function(prefixo) {
 };
 
 // ============================================
-// SCANNER AO VIVO COM MIRA LASER E FOTO
+// SCANNER AO VIVO COM MIRA LASER, FULL HD E ZOOM
 // ============================================
 window.abrirScannerAoVivo = function(targetInputId, callbackOnScan) {
   activeTargetInputId = targetInputId;
   activeScanCallback = callbackOnScan;
+  zoomAtual = 1;
   
   document.getElementById('modal-scanner-live').style.display = 'flex';
   
@@ -987,19 +992,38 @@ window.abrirScannerAoVivo = function(targetInputId, callbackOnScan) {
     html5QrCodeLive = new Html5Qrcode("interactive-reader");
   }
 
+  // Faixa estreita (65px) apenas para os traços do código de barras
   const config = { 
-    fps: 15, 
-    qrbox: { width: 280, height: 140 }
+    fps: 20, 
+    qrbox: { width: 280, height: 65 },
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.EAN_13,
+      Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.CODE_128,
+      Html5QrcodeSupportedFormats.UPC_A,
+      Html5QrcodeSupportedFormats.UPC_E
+    ]
+  };
+
+  const cameraConstraints = { 
+    facingMode: "environment",
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
+    advanced: [{ focusMode: "continuous" }]
   };
 
   html5QrCodeLive.start(
-    { facingMode: "environment" },
+    cameraConstraints,
     config,
     function(decodedText) {
       window.pararScannerAoVivo();
       var input = document.getElementById(activeTargetInputId);
       if (input) {
-        input.value = decodedText;
+        var limpo = decodedText.trim();
+        if (/^\d[\d\s-]*\d$/.test(limpo)) {
+          limpo = limpo.replace(/\D/g, '');
+        }
+        input.value = limpo;
         input.dispatchEvent(new Event('input', { bubbles: true }));
       }
       window.toast('Lido ao vivo: ' + decodedText, 'ok');
@@ -1007,8 +1031,47 @@ window.abrirScannerAoVivo = function(targetInputId, callbackOnScan) {
     },
     function(errorMessage) {}
   ).catch(function(err) {
-    window.toast('Ative a permissão de câmera no navegador.', 'er');
+    // Fallback caso a resolução 1080p falhe no aparelho
+    html5QrCodeLive.start(
+      { facingMode: "environment" },
+      config,
+      function(decodedText) {
+        window.pararScannerAoVivo();
+        var input = document.getElementById(activeTargetInputId);
+        if (input) {
+          var limpo = decodedText.trim();
+          if (/^\d[\d\s-]*\d$/.test(limpo)) {
+            limpo = limpo.replace(/\D/g, '');
+          }
+          input.value = limpo;
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        window.toast('Lido ao vivo: ' + decodedText, 'ok');
+        if (activeScanCallback) activeScanCallback();
+      },
+      function(e2) {}
+    ).catch(function(err2) {
+      window.toast('Ative a permissão de câmera no navegador.', 'er');
+    });
   });
+};
+
+window.alternarZoom = function() {
+  if (!html5QrCodeLive || !html5QrCodeLive.isScanning) return;
+  const videoEl = document.querySelector("#interactive-reader video");
+  
+  if (videoEl && videoEl.srcObject) {
+    const track = videoEl.srcObject.getVideoTracks()[0];
+    const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+    
+    if (capabilities.zoom) {
+      zoomAtual = zoomAtual === 1 ? Math.min(2.5, capabilities.zoom.max) : 1;
+      track.applyConstraints({ advanced: [{ zoom: zoomAtual }] });
+      window.toast('Zoom: ' + zoomAtual + 'x', 'ok');
+    } else {
+      window.toast('Zoom óptico/digital não suportado no navegador.', 'w');
+    }
+  }
 };
 
 window.pararScannerAoVivo = function() {
@@ -1139,7 +1202,11 @@ document.addEventListener('DOMContentLoaded', function() {
       if (decodedText) {
         var input = document.getElementById(activeTargetInputId);
         if (input) {
-          input.value = decodedText;
+          var limpo = decodedText.trim();
+          if (/^\d[\d\s-]*\d$/.test(limpo)) {
+            limpo = limpo.replace(/\D/g, '');
+          }
+          input.value = limpo;
           input.dispatchEvent(new Event('input', { bubbles: true }));
         }
         window.toast('Lido com sucesso: ' + decodedText, 'ok');
