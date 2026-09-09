@@ -1245,21 +1245,34 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.disabled = true;
     btn.textContent = 'Salvando...';
 
-    var prodObj = produtosContagem.find(function(p){ return String(p.id) === String(idProd); });
+    var prodObj = produtosContagem.find(function(p){ return String(p.id).trim() === String(idProd).trim(); });
     var nomeProd = prodObj ? prodObj.nome : '';
 
     google.script.run.withSuccessHandler(function(res) {
       btn.disabled = false;
       btn.textContent = 'Salvar Validade';
-      window.toast(res ? res.mensagem : 'Validade salva com sucesso!', (res && res.sucesso !== false) ? 'ok' : 'er');
-      document.getElementById('val-dt-venc').value = '';
-      document.getElementById('val-lote').value = '';
-      window.carregarValidades();
+      if (res && res.sucesso === false) {
+        window.toast(res.mensagem || 'Erro ao salvar validade.', 'er');
+      } else {
+        window.toast((res && res.mensagem) ? res.mensagem : 'Validade salva com sucesso!', 'ok');
+        document.getElementById('val-dt-venc').value = '';
+        document.getElementById('val-lote').value = '';
+        window.carregarValidades();
+      }
     }).withFailureHandler(function(err) {
       btn.disabled = false;
       btn.textContent = 'Salvar Validade';
       window.toast('Erro ao salvar validade.', 'er');
-    }).salvarValidade({ idProduto: idProd, nome: nomeProd, dataVenc: dtVenc, quantidade: qtd, lote: lote, usuario: usuarioLogado ? usuarioLogado.nome : '' });
+    }).salvarValidade({
+      id: idProd,
+      idProduto: String(idProd).trim(),
+      nome: nomeProd,
+      codBarra: prodObj ? prodObj.codBarra : '',
+      dataVenc: dtVenc,
+      quantidade: qtd,
+      lote: lote,
+      usuario: usuarioLogado ? usuarioLogado.nome : ''
+    });
   });
 
   // SALVAMENTO DA VALIDADE RÁPIDA (MODAL NA TELA DE CONTAGEM)
@@ -1276,20 +1289,33 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.disabled = true;
     btn.textContent = 'Salvando...';
 
-    var prodObj = produtosContagem.find(function(p){ return String(p.id) === String(idProd); });
-    var nomeProd = prodObj ? prodObj.nome : '';
+    var prodObj = produtosContagem.find(function(p){ return String(p.id).trim() === String(idProd).trim(); });
+    var nomeProd = prodObj ? prodObj.nome : document.getElementById('qv-prod-nome').textContent;
 
     google.script.run.withSuccessHandler(function(res) {
       btn.disabled = false;
       btn.textContent = 'Confirmar Validade';
-      window.toast(res ? res.mensagem : 'Validade salva com sucesso!', (res && res.sucesso !== false) ? 'ok' : 'er');
-      document.getElementById('modal-quick-validade').style.display = 'none';
-      window.carregarContagem();
+      if (res && res.sucesso === false) {
+        window.toast(res.mensagem || 'Erro ao salvar validade.', 'er');
+      } else {
+        window.toast((res && res.mensagem) ? res.mensagem : 'Validade salva com sucesso!', 'ok');
+        document.getElementById('modal-quick-validade').style.display = 'none';
+        window.carregarContagem();
+      }
     }).withFailureHandler(function(err) {
       btn.disabled = false;
       btn.textContent = 'Confirmar Validade';
       window.toast('Erro ao salvar validade.', 'er');
-    }).salvarValidade({ idProduto: idProd, nome: nomeProd, dataVenc: dtVenc, quantidade: qtd, lote: lote, usuario: usuarioLogado ? usuarioLogado.nome : '' });
+    }).salvarValidade({
+      id: idProd,
+      idProduto: String(idProd).trim(),
+      nome: nomeProd,
+      codBarra: prodObj ? prodObj.codBarra : '',
+      dataVenc: dtVenc,
+      quantidade: qtd,
+      lote: lote,
+      usuario: usuarioLogado ? usuarioLogado.nome : ''
+    });
   });
 
   // SALVAR PERMISSÕES DO USUÁRIO
@@ -1543,7 +1569,6 @@ window.carregarContagem = function() {
   document.getElementById('lista-contagem').innerHTML = '';
   limiteExibicao = 50;
 
-  // 1. Carrega produtos imediatamente sem travar a tela
   google.script.run
     .withSuccessHandler(function(prods) {
       produtosContagem = prods || [];
@@ -1551,11 +1576,10 @@ window.carregarContagem = function() {
       window.popularFiltroCategorias(produtosContagem);
       window.renderContagem();
 
-      // 2. Busca as validades em segundo plano
       google.script.run
         .withSuccessHandler(function(vencs) {
           validadesData = vencs || [];
-          window.renderContagem(); // Atualiza exibição com as datas de vencimento
+          window.renderContagem();
         })
         .withFailureHandler(function(err) {
           console.warn("Falha ao buscar validades em segundo plano:", err);
@@ -1587,7 +1611,6 @@ window.gerarMetaHtml = function(p, qtd) {
   }
   metaHtml += ' | Ideal: ' + ideal;
   
-  // EXIBIR DATA DE VENCIMENTO DO ITEM
   var valMatch = (validadesData || []).find(function(v) {
     if (!v) return false;
     var vId = String(v.idProduto || v.id || '').trim();
@@ -2112,7 +2135,7 @@ window.popularSelectCartaz = function() {
     var categorias = new Set();
     produtosContagem.forEach(function(p) { if (p.categoria) categorias.add(p.categoria.toUpperCase()); });
     var cHtml = '<option value="TODAS">Todas as Categorias</option>';
-    categorias.forEach(function(cat) { cHtml += '<option value="' + cat + '">' + cat + '</option>'; });
+    categorias.forEach(function(cat) { html += '<option value="' + cat + '">' + cat + '</option>'; });
     selCat.innerHTML = cHtml;
     selCat.value = catFiltro;
   }
